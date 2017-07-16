@@ -1,0 +1,5 @@
+**/out
+**/*.re
+**/*.sre
+**/.idea/workspace.xml
+**/.idea/tasks.xml
