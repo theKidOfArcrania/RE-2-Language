@@ -18,6 +18,6 @@ architecture.
 ### Registers
 Registers are also utilized within this specification (as if a value stack isn't 
 enough!) as temorary variables. There are 16 16-bit registers (maybe a little too 
-many of them!), with the last three registers being special: reg15 is the IP 
-(instruction pointer), reg14 is the BP (base [frame] pointer), reg13 is the SP
+many of them!), with the last three registers being special: `reg15` is the `IP` 
+(instruction pointer), `reg14` is the `BP` (base (frame) pointer), `reg13` is the `SP`
 (stack pointer). 
