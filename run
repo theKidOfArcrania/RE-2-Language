@@ -5,4 +5,4 @@ if [ "$#" -eq 0 ]; then
   exit
 fi
 
-java -cp 'out/production/RE^2' RESquared $1
+java -cp 'out/production/RE^2' com.theKidOfArcrania.re2.RESquared $1

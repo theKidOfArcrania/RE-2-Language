@@ -1,4 +1,4 @@
-//RE^2
+package com.theKidOfArcrania.re2;//RE^2
 
 // I always wanted to create my own variant of machine language. So here it
 // is, a relatively simple language. I call it Revamped Evolution of
@@ -8,38 +8,45 @@
 // combination to the program. Good luck!
 //
 
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Scanner;
 
 @SuppressWarnings("JavaDoc")
 public class RESquared {
 
-    public static final int SP = 13;
-    public static final int BP = 14;
-    public static final int IP = 15;
+    public static final int REGISTER_COUNT = 0x10;
+    public static final int REGISTER_MASK = REGISTER_COUNT - 1;
+    public static final int SP = REGISTER_COUNT - 3;
+    public static final int BP = REGISTER_COUNT - 2;
+    public static final int IP = REGISTER_COUNT - 1;
+
     public static final byte[] SIGNATURE = {0x52, 0x45, 0x5e, 0x32, 0x00, 0x00, 0x00, 0x01}; //RE^2
 
     public static final int MAX_ADDR = 0xFFFF;
     public static final int STACK_ADDR = 0xFFF0;
-    public static final int VARIABLE_MASK = 0xF;
-    public static short[] VARIABLES = new short[16];
+
+    public static short[] REGISTERS = new short[REGISTER_COUNT];
     public static byte[] MEMORY = new byte[MAX_ADDR + 1];
 
     public static Scanner in = new Scanner(System.in);
     public static short ipCache;
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
         System.out.println("RE^2 Interpreter v1.0");
         System.out.println("Copyright (c) 2017 theKidOfArcrania\n");
 
         if (args.length == 0)
         {
-            System.out.println("Usage: java RESquared <File>");
+            File path = new File(RESquared.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI().getPath());
+            if (path.isDirectory())
+                System.out.println("Usage: java com.theKidOfArcrania.re2.RESquared <File>");
+            else
+                System.out.println("Usage: java -jar " + path.getName() +
+                        " <file>");
+
             System.exit(2);
         }
 
@@ -52,7 +59,7 @@ public class RESquared {
             if (!Arrays.equals(SIGNATURE, sig))
                 throw new Exception();
 
-            VARIABLES[IP] = readShort(dis); //entry point
+            REGISTERS[IP] = readShort(dis); //entry point
             byte sections = dis.readByte();
             if (sections < 0)
                 throw new Exception();
@@ -66,7 +73,7 @@ public class RESquared {
                 dis.readFully(MEMORY, offset, size);
             }
 
-            VARIABLES[BP] = VARIABLES[SP] = (short)STACK_ADDR;
+            REGISTERS[BP] = REGISTERS[SP] = (short)STACK_ADDR;
             while (true)
                 step();
         }
@@ -82,7 +89,7 @@ public class RESquared {
         }
         catch (IndexOutOfBoundsException e)
         {
-            System.out.println("ERROR: Segmentation Fault");
+            System.out.println("ERROR: Segmentation Fault.");
             //e.printStackTrace();
             System.exit(3);
         }
@@ -101,14 +108,14 @@ public class RESquared {
 
     public static byte indirectIncr(int variable)
     {
-        byte val = MEMORY[VARIABLES[variable] & MAX_ADDR];
-        VARIABLES[variable]++;
+        byte val = MEMORY[REGISTERS[variable] & MAX_ADDR];
+        REGISTERS[variable]++;
         return val;
     }
 
     public static byte indirect(int variable, int offset)
     {
-        byte val = MEMORY[((variable == IP ? ipCache : VARIABLES[variable]) &
+        byte val = MEMORY[((variable == IP ? ipCache : REGISTERS[variable]) &
                 MAX_ADDR) + offset];
         return val;
     }
@@ -122,7 +129,7 @@ public class RESquared {
 
     public static void putIndirect(byte val, int variable, int offset)
     {
-        MEMORY[((variable == IP ? ipCache : VARIABLES[variable]) & MAX_ADDR) +
+        MEMORY[((variable == IP ? ipCache : REGISTERS[variable]) & MAX_ADDR) +
                 offset] = val;
     }
 
@@ -134,26 +141,26 @@ public class RESquared {
 
     public static void putShortIndirect(short val, int variable, int offset)
     {
-        putShort(val, ((variable == IP ? ipCache : VARIABLES[variable]) &
+        putShort(val, ((variable == IP ? ipCache : REGISTERS[variable]) &
                 MAX_ADDR) + offset);
     }
 
     public static void push(int val)
     {
-        VARIABLES[SP] -= 2;
+        REGISTERS[SP] -= 2;
         putShortIndirect((short)val, SP, 0);
     }
 
     public static short pop()
     {
-        VARIABLES[SP] += 2;
+        REGISTERS[SP] += 2;
         return getShort(indirect(SP, -2), indirect(SP, -1));
     }
 
     @SuppressWarnings("MagicNumber")
     public static void step()
     {
-        ipCache = VARIABLES[IP];
+        ipCache = REGISTERS[IP];
         int opcode = indirectIncr(IP) & 0xff;
 
         switch (opcode)
@@ -189,7 +196,7 @@ public class RESquared {
                 tmp = pop();
                 push(pop() >> tmp);
                 break;
-            case 0x3d: //LOADVAL8 [8-bit VALUE]
+            case 0x3d: //PUSH [8-bit VALUE]
                 push(indirectIncr(IP));
                 break;
             case 0x3e: //SHL
@@ -200,106 +207,106 @@ public class RESquared {
                 tmp = pop();
                 push(pop() >>> tmp);
                 break;
-            case 0x44: //LOADMEM16 [ADDR]
+            case 0x44: //PUSH [ADDR]
                 int addr = getShort(indirectIncr(IP), indirectIncr(IP))
                         & MAX_ADDR;
                 push(getShort(MEMORY[addr], MEMORY[addr + 1]));
                 break;
-            case 0x4b: //LOADVAR [VAR]
-                push(VARIABLES[indirectIncr(IP) & VARIABLE_MASK]);
+            case 0x4b: //PUSH [REG]
+                push(REGISTERS[indirectIncr(IP) & REGISTER_MASK]);
                 break;
-            case 0x4f: //STOREVAR [VAR]
-                VARIABLES[indirectIncr(IP) & VARIABLE_MASK] = pop();
+            case 0x4f: //POP [REG]
+                REGISTERS[indirectIncr(IP) & REGISTER_MASK] = pop();
                 break;
-            case 0x50: //LOADMEM16 [8-bit OFFSET]([VAR])
-                int var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x50: //PUSH [8-bit OFFSET]([REG])
+                int var = indirectIncr(IP) & REGISTER_MASK;
                 int off = indirectIncr(IP);
                 push(getShort(indirect(var, off), indirect(var, off + 1)));
                 break;
-            case 0x51: //LOADMEM8 ([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x51: //PUSH ([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
                 push(indirect(var, 0));
                 break;
-            case 0x56: //STOREMEM8 [ADDR]
+            case 0x56: //STOREB [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
                 byte val = (byte)pop();
                 MEMORY[addr] = val;
                 break;
-            case 0x57: //STOREMEM16 [ADDR]
+            case 0x57: //STOREW [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
                 putShort(pop(), addr);
                 break;
             case 0x58: //JMP [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
-                VARIABLES[IP] = (short)addr;
+                REGISTERS[IP] = (short)addr;
                 break;
             case 0x5a: //CALL [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
-                push(VARIABLES[IP]);
-                VARIABLES[IP] = (short)addr;
+                push(REGISTERS[IP]);
+                REGISTERS[IP] = (short)addr;
                 break;
             case 0x5e: //ADD
                 push(pop() + pop());
                 break;
-            case 0x5f: //JMP *[VAR]
-                var = indirectIncr(IP) & VARIABLE_MASK;
-                VARIABLES[IP] = getShort(indirect(var, 0), indirect(var, 1));
+            case 0x5f: //JMP ([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
+                REGISTERS[IP] = getShort(indirect(var, 0), indirect(var, 1));
                 break;
-            case 0x63: //STOREMEM16 [8-bit OFFSET]([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x63: //STOREW [8-bit OFFSET]([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
                 off = indirectIncr(IP);
                 putShortIndirect(pop(), var, off);
                 break;
-            case 0x64: //STOREMEM8 [8-bit OFFSET]([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x64: //STOREB [8-bit OFFSET]([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
                 off = indirectIncr(IP);
                 putIndirect((byte)pop(), var, off);
                 break;
-            case 0x65: //OUTPUTSTR [8-bit OFFSET]([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x65: //OUTPUTSTR [8-bit OFFSET]([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
                 off = indirectIncr(IP);
-                outputString(((var == IP ? ipCache : VARIABLES[var]) + off)
+                outputString(((var == IP ? ipCache : REGISTERS[var]) + off)
                         & MAX_ADDR);
                 break;
-            case 0x67: //STOREMEM8 ([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x67: //STOREB ([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
                 putIndirect((byte)pop(), var, 0);
                 break;
-            case 0x69: //STOREMEM16 ([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x69: //STOREW ([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
                 putShortIndirect(pop(), var, 0);
                 break;
-            case 0x6a: //LOADMEM16 ([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x6a: //LOADW ([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
                 push(getShort(indirect(var, 0), indirect(var, 1)));
                 break;
-            case 0x6b: //OUTPUTSTR ([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
-                outputString((var == IP ? ipCache : VARIABLES[var]) & MAX_ADDR);
+            case 0x6b: //OUTPUTSTR ([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
+                outputString((var == IP ? ipCache : REGISTERS[var]) & MAX_ADDR);
                 break;
-            case 0x6c: //LOADMEM8 [8-bit OFFSET]([VAR])
-                var = indirectIncr(IP) & VARIABLE_MASK;
+            case 0x6c: //LOADB [8-bit OFFSET]([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
                 off = indirectIncr(IP);
                 push(indirect(var, off));
                 break;
             case 0x6d: //EXIT [16-bit STATUSCODE]
                 System.exit(getShort(indirectIncr(IP), indirectIncr(IP)));
                 break;
-            case 0x6f: //LOADVAL16 [16-bit VALUE]
+            case 0x6f: //PUSH [16-bit VALUE]
                 push(getShort(indirectIncr(IP), indirectIncr(IP)));
                 break;
             case 0x7c: //XOR
                 push(pop() ^ pop());
                 break;
-            case 0x7d: //CALL *[VAR]
-                var = indirectIncr(IP) & VARIABLE_MASK;
-                push(VARIABLES[IP]);
-                VARIABLES[IP] = indirect(var, 0);
+            case 0x7d: //CALL ([REG])
+                var = indirectIncr(IP) & REGISTER_MASK;
+                push(REGISTERS[IP]);
+                REGISTERS[IP] = getShort(indirect(var, 0), indirect(var, 1));
                 break;
             case 0x7e: //RET
-                VARIABLES[IP] = pop();
+                REGISTERS[IP] = pop();
                 break;
-            case 0x8e: //LOADMEM8 [ADDR]
+            case 0x8e: //LOADB [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
                 push(MEMORY[addr]);
                 break;
@@ -316,9 +323,9 @@ public class RESquared {
             case 0xde: //JNZ [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
                 if (pop() != 0)
-                    VARIABLES[IP] = (short)addr;
+                    REGISTERS[IP] = (short)addr;
                 break;
-            case 0xdf: //INPUT [VAR]
+            case 0xdf: //INPUT
                 try
                 {
                     push(in.nextShort());
@@ -332,17 +339,17 @@ public class RESquared {
             case 0xfc: //JZ [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
                 if (pop() == 0)
-                    VARIABLES[IP] = (short)addr;
+                    REGISTERS[IP] = (short)addr;
                 break;
             case 0xfe: //JN [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
                 if (pop() < 0)
-                    VARIABLES[IP] = (short)addr;
+                    REGISTERS[IP] = (short)addr;
                 break;
             case 0xff: //JP [ADDR]
                 addr = getShort(indirectIncr(IP), indirectIncr(IP)) & MAX_ADDR;
                 if (pop() > 0)
-                    VARIABLES[IP] = (short)addr;
+                    REGISTERS[IP] = (short)addr;
                 break;
             default:
                 System.out.printf("ERROR: Invalid opcode: 0x%02x\n@0x%04x",

@@ -1,0 +1,9 @@
+package com.theKidOfArcrania.re2.parsing;
+
+public enum ErrorSituation
+{
+    ERROR_MISSING_TOKEN, ERROR_EXTRA_TOKEN, ERROR_NUMBER_PARSE, ERROR_NUMBER_RANGE, ERROR_INVALID_TOKEN,
+    ERROR_INVALID_REGISTER, ERROR_INVALID_OFFSET
+
+    //ERROR_NUMBER_RANGE has $MIN and $MAX variables
+}

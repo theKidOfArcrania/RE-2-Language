@@ -5,4 +5,4 @@ if [ "$#" -eq 0 ]; then
   exit
 fi
 
-java -cp 'out/production/RE^2' RESquaredAssembler $1
+java -cp 'out/production/Assembler' com.theKidOfArcrania.re2.RESquaredAssembler $1
