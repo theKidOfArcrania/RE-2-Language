@@ -4,6 +4,8 @@ RE^2 is a 16-bit based architecture I designed just for fun. This was designed a
 hybrid between java bytecode and x86 architecture. This repository contains an 
 assembler and an interpreter.
 
+This is licensed under the MIT License.
+
 ## Basic Mechanics
 RE^2 mechanics works with the premise of a "value stack". All basic arithmetic 
 operations will carry out a combination of pops and pushes to execute the particular
