@@ -532,7 +532,7 @@ public class RESquaredAssembler
                             reader.traceCode(strOffset + i);
                             return null;
                         }
-                        String point = str.substring(i + 1, charSize).toUpperCase();
+                        String point = str.substring(i + 1, i + 1 + charSize).toUpperCase();
                         for (char hex : point.toCharArray())
                         {
                             if (!Character.isLetterOrDigit(hex) ||
