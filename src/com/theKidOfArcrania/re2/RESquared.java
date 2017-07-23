@@ -48,7 +48,7 @@ public class RESquared {
 
     public static void main(String[] args) throws Exception
     {
-        System.out.println("RE^2 Interpreter v1.0");
+        System.out.println("RE^2 Interpreter v1.1");
         System.out.println("Copyright (c) 2017 theKidOfArcrania\n");
 
         if (args.length == 0)
@@ -219,7 +219,7 @@ public class RESquared {
                 break;
             case 0x3f: //SHR
                 tmp = pop();
-                push(pop() >>> tmp);
+                push((pop() & 0xFFFF) >>> tmp);
                 break;
             case 0x44: //PUSH [ADDR]
                 int addr = getShort(indirectIncr(IP), indirectIncr(IP))

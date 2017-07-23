@@ -161,7 +161,7 @@ public class RESquaredAssembler
 
     public static void main(String[] args) throws Exception
     {
-        System.out.println("RE^2 Assembler v1.0");
+        System.out.println("RE^2 Assembler v1.1");
         System.out.println("Copyright (c) 2017 theKidOfArcrania\n");
 
         if (args.length == 0)
