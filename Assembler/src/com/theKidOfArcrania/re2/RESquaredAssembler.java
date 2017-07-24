@@ -591,7 +591,10 @@ public class RESquaredAssembler
             section.write((byte)opcode);
 
         if (instruction.equalsIgnoreCase("POP") && !reader.hasNextToken())
+        {
+            section.write((byte)0xdc);
             return true;
+        }
 
         if (subopcodes.containsKey(instruction))
             return decodeOperands(section, instruction);
