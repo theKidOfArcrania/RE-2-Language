@@ -1,8 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ "$#" -eq 0 ]; then
-  echo 'Usage: ./assemble <Filename>'
+  echo "Usage: $0 <Filename>"
   exit
 fi
 
-java -cp 'out/production/Assembler' com.theKidOfArcrania.re2.RESquaredAssembler $1
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+java -cp "$DIR/out/production/Assembler" com.theKidOfArcrania.re2.RESquaredAssembler $1

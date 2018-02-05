@@ -1,8 +1,9 @@
 #!/bin/sh
 
 if [ "$#" -eq 0 ]; then
-  echo 'Usage: ./run <Filename>'
+  echo "Usage: $0 <Filename>"
   exit
 fi
 
-java -cp 'out/production/RE^2' com.theKidOfArcrania.re2.RESquared $1
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+java -cp "$DIR/out/production/RE^2" com.theKidOfArcrania.re2.RESquared $1
